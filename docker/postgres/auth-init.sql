@@ -1,0 +1,1 @@
+-- Schema managed by Prisma migrations (auth-service)

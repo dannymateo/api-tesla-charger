@@ -1,0 +1,348 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: voltnet-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-voltnet}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-voltnet}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+      - ./docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./docker/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: voltnet-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  auth-db:
+    image: postgres:16-alpine
+    container_name: voltnet-auth-db
+    environment:
+      POSTGRES_USER: ${AUTH_DB_USER:-auth}
+      POSTGRES_PASSWORD: ${AUTH_DB_PASS:-auth}
+      POSTGRES_DB: ${AUTH_DB_NAME:-auth_db}
+    ports:
+      - "5433:5432"
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+      - ./docker/postgres/auth-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${AUTH_DB_USER:-auth} -d ${AUTH_DB_NAME:-auth_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  stations-db:
+    image: postgres:16-alpine
+    container_name: voltnet-stations-db
+    environment:
+      POSTGRES_USER: ${STATIONS_DB_USER:-stations}
+      POSTGRES_PASSWORD: ${STATIONS_DB_PASS:-stations}
+      POSTGRES_DB: ${STATIONS_DB_NAME:-stations_db}
+    ports:
+      - "5434:5432"
+    volumes:
+      - stations-db-data:/var/lib/postgresql/data
+      - ./docker/postgres/stations-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${STATIONS_DB_USER:-stations} -d ${STATIONS_DB_NAME:-stations_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  sessions-db:
+    image: postgres:16-alpine
+    container_name: voltnet-sessions-db
+    environment:
+      POSTGRES_USER: ${SESSIONS_DB_USER:-sessions}
+      POSTGRES_PASSWORD: ${SESSIONS_DB_PASS:-sessions}
+      POSTGRES_DB: ${SESSIONS_DB_NAME:-sessions_db}
+    ports:
+      - "5435:5432"
+    volumes:
+      - sessions-db-data:/var/lib/postgresql/data
+      - ./docker/postgres/sessions-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SESSIONS_DB_USER:-sessions} -d ${SESSIONS_DB_NAME:-sessions_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  billing-db:
+    image: postgres:16-alpine
+    container_name: voltnet-billing-db
+    environment:
+      POSTGRES_USER: ${BILLING_DB_USER:-billing}
+      POSTGRES_PASSWORD: ${BILLING_DB_PASS:-billing}
+      POSTGRES_DB: ${BILLING_DB_NAME:-billing_db}
+    ports:
+      - "5436:5432"
+    volumes:
+      - billing-db-data:/var/lib/postgresql/data
+      - ./docker/postgres/billing-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${BILLING_DB_USER:-billing} -d ${BILLING_DB_NAME:-billing_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: voltnet-jaeger
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"
+      - "4318:4318"
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: voltnet-prometheus
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+    depends_on:
+      gateway:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      stations-service:
+        condition: service_healthy
+      sessions-service:
+        condition: service_healthy
+      billing-service:
+        condition: service_healthy
+      notification-service:
+        condition: service_healthy
+
+  grafana:
+    image: grafana/grafana:11.3.1
+    container_name: voltnet-grafana
+    ports:
+      - "3030:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+
+  gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    container_name: voltnet-gateway
+    ports:
+      - "3000:3000"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      BILLING_WEBHOOK_BASE_URL: http://billing-service:3000
+      OTEL_ENABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/api/v1/health', (r) => process.exit(r.statusCode===200?0:1)).on('error', () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
+    container_name: voltnet-auth-service
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      auth-db:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${AUTH_DB_USER:-auth}:${AUTH_DB_PASS:-auth}@auth-db:5432/${AUTH_DB_NAME:-auth_db}?schema=public
+      HEALTH_PORT: 3000
+      OTEL_ENABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/health', (r) => process.exit(r.statusCode===200?0:1)).on('error', () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  stations-service:
+    build:
+      context: .
+      dockerfile: stations-service/Dockerfile
+    container_name: voltnet-stations-service
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      stations-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${STATIONS_DB_USER:-stations}:${STATIONS_DB_PASS:-stations}@stations-db:5432/${STATIONS_DB_NAME:-stations_db}?schema=public
+      HEALTH_PORT: 3000
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      OTEL_ENABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/health', (r) => process.exit(r.statusCode===200?0:1)).on('error', () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  sessions-service:
+    build:
+      context: .
+      dockerfile: sessions-service/Dockerfile
+    container_name: voltnet-sessions-service
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      sessions-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${SESSIONS_DB_USER:-sessions}:${SESSIONS_DB_PASS:-sessions}@sessions-db:5432/${SESSIONS_DB_NAME:-sessions_db}?schema=public
+      HEALTH_PORT: 3000
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CHARGE_RATE_KWH_PER_SEC: 5
+      OTEL_ENABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/health', (r) => process.exit(r.statusCode===200?0:1)).on('error', () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  billing-service:
+    build:
+      context: .
+      dockerfile: billing-service/Dockerfile
+    container_name: voltnet-billing-service
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      billing-db:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${BILLING_DB_USER:-billing}:${BILLING_DB_PASS:-billing}@billing-db:5432/${BILLING_DB_NAME:-billing_db}?schema=public
+      HEALTH_PORT: 3000
+      OTEL_ENABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/health', (r) => process.exit(r.statusCode===200?0:1)).on('error', () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    container_name: voltnet-notification-service
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      HEALTH_PORT: 3000
+      RABBITMQ_HOST: rabbitmq
+      OTEL_ENABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/health', (r) => process.exit(r.statusCode===200?0:1)).on('error', () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  seed:
+    image: node:20-alpine
+    container_name: voltnet-seed
+    working_dir: /app
+    profiles: [seed]
+    env_file:
+      - .env
+    environment:
+      AUTH_DATABASE_URL: postgresql://${AUTH_DB_USER:-auth}:${AUTH_DB_PASS:-auth}@auth-db:5432/${AUTH_DB_NAME:-auth_db}?schema=public
+      STATIONS_DATABASE_URL: postgresql://${STATIONS_DB_USER:-stations}:${STATIONS_DB_PASS:-stations}@stations-db:5432/${STATIONS_DB_NAME:-stations_db}?schema=public
+      SESSIONS_DATABASE_URL: postgresql://${SESSIONS_DB_USER:-sessions}:${SESSIONS_DB_PASS:-sessions}@sessions-db:5432/${SESSIONS_DB_NAME:-sessions_db}?schema=public
+      BILLING_DATABASE_URL: postgresql://${BILLING_DB_USER:-billing}:${BILLING_DB_PASS:-billing}@billing-db:5432/${BILLING_DB_NAME:-billing_db}?schema=public
+    volumes:
+      - .:/app
+      - /app/auth-service/node_modules
+      - /app/stations-service/node_modules
+      - /app/sessions-service/node_modules
+      - /app/billing-service/node_modules
+    depends_on:
+      auth-db:
+        condition: service_healthy
+      stations-db:
+        condition: service_healthy
+      sessions-db:
+        condition: service_healthy
+      billing-db:
+        condition: service_healthy
+    command: ["sh", "-c", "apk add --no-cache openssl && sh docker/seed/run-all-docker.sh"]
+
+volumes:
+  grafana-data:
+  rabbitmq-data:
+  redis-data:
+  auth-db-data:
+  stations-db-data:
+  sessions-db-data:
+  billing-db-data:
