@@ -1,0 +1,44 @@
+{
+  "users": [
+    {
+      "name": "voltnet",
+      "password_hash": "dm87DH6d//pM5aDERq9e041SjeI73U3Yxy5ATTG1Fn3dXzpj",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": ["administrator"]
+    }
+  ],
+  "permissions": [
+    {
+      "user": "voltnet",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "vhosts": [{ "name": "/" }],
+  "exchanges": [
+    { "name": "voltnet.events", "vhost": "/", "type": "topic", "durable": true, "auto_delete": false, "internal": false, "arguments": {} },
+    { "name": "voltnet.dlx", "vhost": "/", "type": "topic", "durable": true, "auto_delete": false, "internal": false, "arguments": {} }
+  ],
+  "queues": [
+    { "name": "auth.rpc.queue", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} },
+    { "name": "stations.rpc.queue", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} },
+    { "name": "sessions.rpc.queue", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} },
+    { "name": "billing.rpc.queue", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} },
+    { "name": "billing.session-closed.queue", "vhost": "/", "durable": true, "auto_delete": false, "arguments": { "x-dead-letter-exchange": "voltnet.dlx" } },
+    { "name": "auth.invoices-paid.queue", "vhost": "/", "durable": true, "auto_delete": false, "arguments": { "x-dead-letter-exchange": "voltnet.dlx" } },
+    { "name": "auth.user-overdue.queue", "vhost": "/", "durable": true, "auto_delete": false, "arguments": { "x-dead-letter-exchange": "voltnet.dlx" } },
+    { "name": "gateway.station-events.queue", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} },
+    { "name": "gateway.session-progress.queue", "vhost": "/", "durable": false, "auto_delete": false, "arguments": { "x-message-ttl": 5000 } },
+    { "name": "notification.email.queue", "vhost": "/", "durable": true, "auto_delete": false, "arguments": { "x-dead-letter-exchange": "voltnet.dlx" } }
+  ],
+  "bindings": [
+    { "source": "voltnet.events", "vhost": "/", "destination": "billing.session-closed.queue", "destination_type": "queue", "routing_key": "session.closed", "arguments": {} },
+    { "source": "voltnet.events", "vhost": "/", "destination": "auth.invoices-paid.queue", "destination_type": "queue", "routing_key": "invoices.paid", "arguments": {} },
+    { "source": "voltnet.events", "vhost": "/", "destination": "auth.user-overdue.queue", "destination_type": "queue", "routing_key": "user.debt.overdue", "arguments": {} },
+    { "source": "voltnet.events", "vhost": "/", "destination": "gateway.station-events.queue", "destination_type": "queue", "routing_key": "station.state.changed", "arguments": {} },
+    { "source": "voltnet.events", "vhost": "/", "destination": "gateway.session-progress.queue", "destination_type": "queue", "routing_key": "session.progress.updated", "arguments": {} },
+    { "source": "voltnet.events", "vhost": "/", "destination": "notification.email.queue", "destination_type": "queue", "routing_key": "notification.send", "arguments": {} }
+  ]
+}
