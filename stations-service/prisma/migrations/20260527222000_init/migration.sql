@@ -1,0 +1,19 @@
+CREATE TABLE IF NOT EXISTS stations (
+  id UUID PRIMARY KEY,
+  name TEXT NOT NULL,
+  address TEXT NOT NULL,
+  lat DECIMAL(10,7) NOT NULL,
+  lng DECIMAL(10,7) NOT NULL,
+  connectors_total INTEGER NOT NULL,
+  max_kw_threshold INTEGER NOT NULL DEFAULT 100,
+  price_per_kwh DECIMAL(10,2) NOT NULL,
+  enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS processed_events (
+  event_id TEXT PRIMARY KEY,
+  consumer TEXT NOT NULL,
+  processed_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
