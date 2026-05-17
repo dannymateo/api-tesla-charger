@@ -1,0 +1,32 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ChargingSession {
+  id                 String   @id @default(uuid())
+  userId             String   @map("user_id")
+  stationId          String   @map("station_id")
+  requestedKwh       Decimal  @db.Decimal(10, 2) @map("requested_kwh")
+  deliveredKwh       Decimal  @default(0) @db.Decimal(10, 2) @map("delivered_kwh")
+  pricePerKwhSnapshot Decimal @db.Decimal(10, 2) @map("price_per_kwh_snapshot")
+  status             String
+  rejectionReason    String?  @map("rejection_reason")
+  startedAt          DateTime? @map("started_at")
+  endedAt            DateTime? @map("ended_at")
+  lastProgressAt     DateTime? @map("last_progress_at")
+
+  @@map("charging_sessions")
+}
+
+model ProcessedEvent {
+  eventId     String   @id @map("event_id")
+  consumer    String
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@map("processed_events")
+}
