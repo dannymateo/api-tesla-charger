@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Invoice {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  sessionId  String   @unique @map("session_id")
+  stationId  String?  @map("station_id")
+  kwh        Decimal  @db.Decimal(10, 2)
+  unitPrice  Decimal  @db.Decimal(10, 2) @map("unit_price")
+  total      Decimal  @db.Decimal(10, 2)
+  status     String
+  issuedAt   DateTime @default(now()) @map("issued_at")
+  paidAt     DateTime? @map("paid_at")
+
+  paymentLinks PaymentInvoice[]
+
+  @@map("invoices")
+}
+
+model Payment {
+  id             String   @id @default(uuid())
+  paypalOrderId  String?  @map("paypal_order_id")
+  paypalCaptureId String? @map("paypal_capture_id")
+  amount         Decimal  @db.Decimal(10, 2)
+  status         String
+  rawPayload     String?  @map("raw_payload")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  invoiceLinks PaymentInvoice[]
+
+  @@map("payments")
+}
+
+model PaymentInvoice {
+  paymentId String @map("payment_id")
+  invoiceId String @map("invoice_id")
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@id([paymentId, invoiceId])
+  @@map("payment_invoices")
+}
+
+model ProcessedEvent {
+  eventId     String   @id @map("event_id")
+  consumer    String
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@map("processed_events")
+}
