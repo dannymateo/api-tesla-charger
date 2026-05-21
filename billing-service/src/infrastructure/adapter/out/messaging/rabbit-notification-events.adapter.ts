@@ -1,0 +1,50 @@
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Channel, ChannelModel, connect } from 'amqplib';
+import {
+  NotificationEmailPayload,
+  NotificationEventsPort,
+} from '../../../../application/port/out/notification-events.port';
+
+@Injectable()
+export class RabbitNotificationEventsAdapter extends NotificationEventsPort implements OnModuleDestroy {
+  private readonly logger = new Logger(RabbitNotificationEventsAdapter.name);
+  private connection?: ChannelModel;
+  private channel?: Channel;
+
+  private async getChannel() {
+    if (this.channel) {
+      return this.channel;
+    }
+    const user = process.env.RABBITMQ_DEFAULT_USER ?? 'voltnet';
+    const pass = process.env.RABBITMQ_DEFAULT_PASS ?? 'voltnet';
+    const host = process.env.RABBITMQ_HOST ?? 'rabbitmq';
+    const connection = await connect(`amqp://${user}:${pass}@${host}:5672`);
+    this.connection = connection;
+    this.channel = await connection.createChannel();
+    await this.channel.assertExchange('voltnet.events', 'topic', { durable: true });
+    return this.channel;
+  }
+
+  async publishEmailNotification(payload: NotificationEmailPayload) {
+    try {
+      const channel = await this.getChannel();
+      channel.publish(
+        'voltnet.events',
+        'notification.send',
+        Buffer.from(JSON.stringify(payload)),
+        { persistent: true },
+      );
+    } catch (error) {
+      this.logger.warn(`failed to publish notification.send: ${(error as Error).message}`);
+    }
+  }
+
+  async onModuleDestroy() {
+    try {
+      await this.channel?.close();
+      await this.connection?.close();
+    } catch (error) {
+      this.logger.warn(`error closing rabbit channel: ${(error as Error).message}`);
+    }
+  }
+}
