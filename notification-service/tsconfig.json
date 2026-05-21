@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "target": "ES2021",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "paths": {
+      "@voltnet/observability": ["../shared/observability/index.ts"],
+      "@voltnet/observability/*": ["../shared/observability/*"]
+    },
+    "incremental": true,
+    "skipLibCheck": true,
+    "strict": true
+  },
+  "include": ["src/**/*", "../shared/observability/**/*"]
+}

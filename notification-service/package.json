@@ -1,0 +1,37 @@
+{
+  "name": "notification-service",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "prebuild": "node scripts/sync-observability.mjs || node ../scripts/sync-observability.mjs",
+    "build": "nest build",
+    "generate:logo": "node scripts/generate-logo-png.js"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.4.7",
+    "@nestjs/core": "^10.4.7",
+    "@nestjs/platform-express": "^10.4.7",
+    "amqplib": "^0.10.5",
+    "nodemailer": "^6.9.16",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.54.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.57.0",
+    "@opentelemetry/resources": "^1.30.0",
+    "@opentelemetry/sdk-node": "^0.57.0",
+    "@opentelemetry/semantic-conventions": "^1.28.0",
+    "prom-client": "^15.1.3"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^10.4.8",
+    "@types/amqplib": "^0.10.5",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.2",
+    "@types/nodemailer": "^6.4.17",
+    "sharp": "^0.34.5",
+    "typescript": "^5.7.2"
+  }
+}
