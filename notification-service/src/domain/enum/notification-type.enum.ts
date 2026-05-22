@@ -1,0 +1,6 @@
+export enum NotificationType {
+  REGISTRATION = 'REGISTRATION',
+  INVOICE = 'INVOICE',
+  PAYMENT = 'PAYMENT',
+  GENERIC = 'GENERIC',
+}
