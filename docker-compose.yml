@@ -1,3 +1,16 @@
+x-healthcheck-http: &healthcheck-http
+  interval: 10s
+  timeout: 5s
+  retries: 18
+
+x-healthcheck-app: &healthcheck-app
+  <<: *healthcheck-http
+  start_period: 60s
+
+x-healthcheck-migrate: &healthcheck-migrate
+  <<: *healthcheck-http
+  start_period: 180s
+
 services:
   rabbitmq:
     build:
@@ -124,17 +137,17 @@ services:
       - --web.enable-lifecycle
     depends_on:
       gateway:
-        condition: service_healthy
+        condition: service_started
       auth-service:
-        condition: service_healthy
+        condition: service_started
       stations-service:
-        condition: service_healthy
+        condition: service_started
       sessions-service:
-        condition: service_healthy
+        condition: service_started
       billing-service:
-        condition: service_healthy
+        condition: service_started
       notification-service:
-        condition: service_healthy
+        condition: service_started
 
   grafana:
     image: grafana/grafana:11.3.1
@@ -165,16 +178,19 @@ services:
       jaeger:
         condition: service_started
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      JWT_SECRET: ${JWT_SECRET:-change_me}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-voltnet}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-voltnet}
       BILLING_WEBHOOK_BASE_URL: http://billing-service:3000
-      OTEL_ENABLED: "true"
+      OTEL_ENABLED: ${OTEL_ENABLED:-true}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
     healthcheck:
+      <<: *healthcheck-app
       test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/api/v1/health', (r) => process.exit(r.statusCode===200?0:1)).on('error', () => process.exit(1))"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
 
   auth-service:
     build:
@@ -189,17 +205,20 @@ services:
       jaeger:
         condition: service_started
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      JWT_SECRET: ${JWT_SECRET:-change_me}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-voltnet}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-voltnet}
       DATABASE_URL: postgresql://${AUTH_DB_USER:-auth}:${AUTH_DB_PASS:-auth}@auth-db:5432/${AUTH_DB_NAME:-auth_db}?schema=public
       HEALTH_PORT: 3000
-      OTEL_ENABLED: "true"
+      OTEL_ENABLED: ${OTEL_ENABLED:-true}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
     healthcheck:
+      <<: *healthcheck-migrate
       test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/health', (r) => process.exit(r.statusCode===200?0:1)).on('error', () => process.exit(1))"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
 
   stations-service:
     build:
@@ -216,19 +235,21 @@ services:
       jaeger:
         condition: service_started
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-voltnet}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-voltnet}
       DATABASE_URL: postgresql://${STATIONS_DB_USER:-stations}:${STATIONS_DB_PASS:-stations}@stations-db:5432/${STATIONS_DB_NAME:-stations_db}?schema=public
       HEALTH_PORT: 3000
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      OTEL_ENABLED: "true"
+      OTEL_ENABLED: ${OTEL_ENABLED:-true}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
     healthcheck:
+      <<: *healthcheck-migrate
       test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/health', (r) => process.exit(r.statusCode===200?0:1)).on('error', () => process.exit(1))"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
 
   sessions-service:
     build:
@@ -245,20 +266,22 @@ services:
       jaeger:
         condition: service_started
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-voltnet}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-voltnet}
       DATABASE_URL: postgresql://${SESSIONS_DB_USER:-sessions}:${SESSIONS_DB_PASS:-sessions}@sessions-db:5432/${SESSIONS_DB_NAME:-sessions_db}?schema=public
       HEALTH_PORT: 3000
       REDIS_HOST: redis
       REDIS_PORT: 6379
       CHARGE_RATE_KWH_PER_SEC: 5
-      OTEL_ENABLED: "true"
+      OTEL_ENABLED: ${OTEL_ENABLED:-true}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
     healthcheck:
+      <<: *healthcheck-migrate
       test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/health', (r) => process.exit(r.statusCode===200?0:1)).on('error', () => process.exit(1))"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
 
   billing-service:
     build:
@@ -273,17 +296,20 @@ services:
       jaeger:
         condition: service_started
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-voltnet}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-voltnet}
+      RABBITMQ_HOST: rabbitmq
       DATABASE_URL: postgresql://${BILLING_DB_USER:-billing}:${BILLING_DB_PASS:-billing}@billing-db:5432/${BILLING_DB_NAME:-billing_db}?schema=public
       HEALTH_PORT: 3000
-      OTEL_ENABLED: "true"
+      OTEL_ENABLED: ${OTEL_ENABLED:-true}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
     healthcheck:
+      <<: *healthcheck-migrate
       test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/health', (r) => process.exit(r.statusCode===200?0:1)).on('error', () => process.exit(1))"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
 
   notification-service:
     build:
@@ -296,17 +322,19 @@ services:
       jaeger:
         condition: service_started
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-voltnet}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-voltnet}
       HEALTH_PORT: 3000
       RABBITMQ_HOST: rabbitmq
-      OTEL_ENABLED: "true"
+      OTEL_ENABLED: ${OTEL_ENABLED:-true}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
     healthcheck:
+      <<: *healthcheck-app
       test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/health', (r) => process.exit(r.statusCode===200?0:1)).on('error', () => process.exit(1))"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
 
   seed:
     image: node:20-alpine
@@ -314,7 +342,8 @@ services:
     working_dir: /app
     profiles: [seed]
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       AUTH_DATABASE_URL: postgresql://${AUTH_DB_USER:-auth}:${AUTH_DB_PASS:-auth}@auth-db:5432/${AUTH_DB_NAME:-auth_db}?schema=public
       STATIONS_DATABASE_URL: postgresql://${STATIONS_DB_USER:-stations}:${STATIONS_DB_PASS:-stations}@stations-db:5432/${STATIONS_DB_NAME:-stations_db}?schema=public

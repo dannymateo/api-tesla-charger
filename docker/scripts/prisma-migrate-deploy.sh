@@ -7,7 +7,6 @@ run_migrate() {
 
 OUTPUT=$(run_migrate) && {
   echo "$OUTPUT"
-  npx prisma db push
   exit 0
 }
 
@@ -21,7 +20,6 @@ if echo "$OUTPUT" | grep -q 'P3005'; then
     npx prisma migrate resolve --applied "$MIGRATION_NAME" || true
   fi
   run_migrate
-  npx prisma db push
   exit 0
 fi
 

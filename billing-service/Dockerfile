@@ -9,4 +9,4 @@ COPY billing-service/ .
 COPY docker/scripts/prisma-migrate-deploy.sh /app/prisma-migrate-deploy.sh
 RUN chmod +x /app/prisma-migrate-deploy.sh && npx prisma generate && npm run build
 EXPOSE 3000
-CMD ["sh", "-c", "until /app/prisma-migrate-deploy.sh; do echo 'waiting for billing-db'; sleep 2; done; npm run start"]
+CMD ["sh", "-c", "until /app/prisma-migrate-deploy.sh; do echo 'waiting for billing-db'; sleep 2; done; node dist/main.js"]

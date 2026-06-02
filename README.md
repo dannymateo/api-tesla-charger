@@ -105,6 +105,8 @@ docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
 
 En **Dokploy** (u otro proxy Docker), usa solo `docker-compose.yml`: el gateway escucha en el puerto **3000 del contenedor**; configura el dominio con **Container port = 3000** (no hace falta publicar el puerto en el host).
 
+Variables mínimas en Dokploy (el `.env` no está en el repo): copia `.env.example` al panel de entorno del compose y rellena al menos `JWT_SECRET`, credenciales PayPal y SMTP si usas pagos/correo. Las bases de datos y RabbitMQ tienen valores por defecto en `docker-compose.yml`.
+
 Esto levanta:
 
 - rabbitmq (5672, UI en 15672)
