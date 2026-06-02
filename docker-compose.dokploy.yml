@@ -1,9 +1,0 @@
-# Optional overlay for Dokploy / shared VPS: do not bind gateway to host port 3000.
-# Dokploy routes to container port 3000 on the Docker network.
-#
-# Command:
-#   docker compose -f docker-compose.yml -f docker-compose.dokploy.yml up -d --build
-
-services:
-  gateway:
-    ports: []

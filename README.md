@@ -97,6 +97,14 @@ Desde la raíz del monorepo ejecuta:
 docker compose up -d --build
 ```
 
+En **local**, para exponer el API en `http://localhost:3000`:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+```
+
+En **Dokploy** (u otro proxy Docker), usa solo `docker-compose.yml`: el gateway escucha en el puerto **3000 del contenedor**; configura el dominio con **Container port = 3000** (no hace falta publicar el puerto en el host).
+
 Esto levanta:
 
 - rabbitmq (5672, UI en 15672)
@@ -108,7 +116,7 @@ Esto levanta:
 - jaeger (16686 UI, 4318 OTLP)
 - prometheus (9090)
 - grafana (3030)
-- gateway (3000)
+- gateway (puerto 3000 solo en red Docker; localhost con `docker-compose.local.yml`)
 - auth-service
 - stations-service
 - sessions-service

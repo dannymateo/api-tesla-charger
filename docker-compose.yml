@@ -157,8 +157,6 @@ services:
     container_name: voltnet-gateway
     expose:
       - "3000"
-    ports:
-      - "${GATEWAY_PUBLISH_PORT:-3000}:3000"
     depends_on:
       rabbitmq:
         condition: service_healthy
