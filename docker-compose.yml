@@ -1,22 +1,21 @@
 services:
   rabbitmq:
-    image: rabbitmq:3.13-management
+    build:
+      context: ./docker/rabbitmq
+      dockerfile: Dockerfile
+    image: voltnet-rabbitmq:3.13
     container_name: voltnet-rabbitmq
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-voltnet}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-voltnet}
     ports:
       - "5672:5672"
       - "15672:15672"
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
-      - ./docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
-      - ./docker/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "check_running"]
       interval: 10s
       timeout: 5s
       retries: 10
+      start_period: 40s
 
   redis:
     image: redis:7-alpine
