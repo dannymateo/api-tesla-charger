@@ -1,7 +1,5 @@
 # Arquitectura hexagonal — Tesla Supercharger
 
-Alineada con `eco-store-microservice` (Java/Spring), adaptada a NestJS + TypeScript.
-
 ## Capas por microservicio
 
 ```
@@ -34,7 +32,7 @@ src/
 | notification-service | `notification-type` | `email-notification` |
 | gateway | `user-role` | `authenticated-user` |
 
-Cada clase expone `static createNew()` / `static reconstitute()` y valida invariantes (estilo eco-store Java).
+Cada clase expone `static createNew()` / `static reconstitute()` y valida invariantes.
 
 ## Reglas de dependencia
 
@@ -42,7 +40,7 @@ Cada clase expone `static createNew()` / `static reconstitute()` y valida invari
 - `application` solo importa `domain` y sus propios `port/*`.
 - `infrastructure` implementa `application/port/out` y llama a `application/port/in` (vía adapters `in`).
 
-## API Gateway (estilo eco-store)
+## API Gateway
 
 El gateway no expone dominio de negocio completo; actúa como **adaptador HTTP/WS** hacia microservicios:
 
@@ -60,13 +58,3 @@ src/
 ├── app.module.ts
 └── main.ts
 ```
-
-## Convenciones de nombres
-
-| Eco-store (Java) | Tesla Supercharger (NestJS) |
-|------------------|-------------------|
-| `IGetCartUseCase` | `IGetCartUseCase` (interface en `port/in`) |
-| `CartRepositoryPort` | `CartRepositoryPort` (abstract class o interface en `port/out`) |
-| `CartApplicationService` | `CartApplicationService` en `application/service` |
-| `CartCommandAdapter` | `cart-rpc.controller.ts` en `adapter/in/rpc` |
-| `PostgresCartRepositoryAdapter` | `prisma-cart.repository.ts` en `adapter/out/persistence` |

@@ -1,4 +1,4 @@
-a# Tesla Supercharger Backend Monorepo
+# Tesla Supercharger Backend Monorepo
 
 Monorepo de microservicios NestJS (arquitectura hexagonal) para la red **Tesla Supercharger**:
 
@@ -10,6 +10,13 @@ Monorepo de microservicios NestJS (arquitectura hexagonal) para la red **Tesla S
 - `notification-service` — envío de correos (SMTP)
 
 Cada servicio mantiene sus propias dependencias, estructura hexagonal, configuración y `Dockerfile`. La comunicación entre servicios es vía **RabbitMQ**; el cliente solo habla con el `gateway`.
+
+## Documentación
+
+| Documento | Descripción |
+|-----------|-------------|
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | Capas hexagonales, estructura de carpetas y convenciones por microservicio |
+| [INFORME_ARQUITECTONICO.md](./INFORME_ARQUITECTONICO.md) | Informe arquitectónico del backend: contexto, decisiones, flujos y modelo de dominio |
 
 ---
 

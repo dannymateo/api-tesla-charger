@@ -1,11 +1,22 @@
 const { Prisma, PrismaClient } = require('@prisma/client');
 const { readFileSync } = require('fs');
-const { join } = require('path');
-const { SESSIONS, sessionPriceSnapshot } = require('../../docker/seed/demo-pricing');
+const path = require('path');
+const fs = require('fs');
 
-const idsPath =
-  process.env.VOLTNET_IDS_PATH || join(__dirname, '../../docker/seed/voltnet-ids.json');
-const ids = JSON.parse(readFileSync(idsPath, 'utf-8'));
+const SEED_DIR =
+  process.env.VOLTNET_SEED_DIR ||
+  ['../docker/seed', '../../docker/seed']
+    .map((rel) => path.join(__dirname, rel))
+    .find((dir) => fs.existsSync(path.join(dir, 'voltnet-ids.json')));
+
+if (!SEED_DIR) {
+  throw new Error('docker/seed not found. Set VOLTNET_SEED_DIR or run from the monorepo.');
+}
+
+const { SESSIONS, sessionPriceSnapshot } = require(path.join(SEED_DIR, 'demo-pricing'));
+const ids = JSON.parse(
+  readFileSync(process.env.VOLTNET_IDS_PATH || path.join(SEED_DIR, 'voltnet-ids.json'), 'utf-8'),
+);
 
 const prisma = new PrismaClient();
 

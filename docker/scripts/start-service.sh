@@ -8,7 +8,8 @@ until /app/prisma-migrate-deploy.sh; do
   sleep 2
 done
 
-export VOLTNET_IDS_PATH="${VOLTNET_IDS_PATH:-/app/docker/seed/voltnet-ids.json}"
+export VOLTNET_SEED_DIR="${VOLTNET_SEED_DIR:-/app/docker/seed}"
+export VOLTNET_IDS_PATH="${VOLTNET_IDS_PATH:-${VOLTNET_SEED_DIR}/voltnet-ids.json}"
 
 if [ -f /app/prisma/schema.prisma ]; then
   echo "Running prisma db seed..."

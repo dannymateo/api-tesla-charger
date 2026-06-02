@@ -210,3 +210,18 @@ Esta decisión es coherente con el atributo de **latencia** sobre **durabilidad*
 | -------------------------------------------------------- | --------------------------------------------------------- |
 | No hay integración con cargadores físicos OCPP/Modbus    | Demostración completa del dominio de negocio sin hardware |
 | Progreso simulado con timers (`CHARGE_RATE_KWH_PER_SEC`) | Pruebas reproducibles (`test-multi-vehicle-charging.js`)  |
+
+---
+
+## 5. Diagrama C4 — Nivel 1 y Nivel 2
+
+El modelo [C4](https://c4model.com/) describe la arquitectura en niveles de abstracción creciente. Para este backend se documentan los dos primeros:
+
+| Nivel | Nombre | Qué representa en Tesla Supercharger |
+|-------|--------|--------------------------------------|
+| **1** | Contexto del sistema | Actores externos (conductor, administrador), el sistema **Tesla Supercharger Backend** como caja negra y sistemas colaboradores (PayPal, SMTP, cliente web/móvil). |
+| **2** | Contenedores | Descomposición interna: `gateway`, microservicios de dominio, RabbitMQ, Redis, bases PostgreSQL por servicio y componentes de observabilidad. |
+
+Los diagramas editables (draw.io) están en el siguiente enlace:
+
+**[C4 Tesla Supercharger — Nivel 1 y Nivel 2 (Google Drive)](https://drive.google.com/file/d/1JRqQWKgSwVESSB8TuJGN5-kLjz_RNFmJ/view?usp=sharing)**
