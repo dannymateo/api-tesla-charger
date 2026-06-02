@@ -7,4 +7,4 @@ COPY scripts/sync-observability.mjs ./scripts/sync-observability.mjs
 COPY gateway/ .
 RUN npm run build
 EXPOSE 3000
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/src/main.js"]

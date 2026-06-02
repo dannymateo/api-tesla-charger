@@ -9,4 +9,4 @@ COPY sessions-service/ .
 COPY docker/scripts/prisma-migrate-deploy.sh /app/prisma-migrate-deploy.sh
 RUN chmod +x /app/prisma-migrate-deploy.sh && npx prisma generate && npm run build
 EXPOSE 3000
-CMD ["sh", "-c", "until /app/prisma-migrate-deploy.sh; do echo 'waiting for sessions-db'; sleep 2; done; node dist/main.js"]
+CMD ["sh", "-c", "until /app/prisma-migrate-deploy.sh; do echo 'waiting for sessions-db'; sleep 2; done; node dist/src/main.js"]

@@ -18,5 +18,5 @@
     "skipLibCheck": true,
     "strict": true
   },
-  "include": ["src/**/*", "../shared/observability/**/*"]
+  "include": ["src/**/*", "shared/observability/**/*"]
 }

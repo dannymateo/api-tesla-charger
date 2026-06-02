@@ -7,4 +7,4 @@ RUN npm install
 COPY notification-service/ .
 RUN npm run build
 EXPOSE 3000
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/src/main.js"]
