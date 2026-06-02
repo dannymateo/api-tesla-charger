@@ -337,10 +337,13 @@ services:
       test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/health', (r) => process.exit(r.statusCode===200?0:1)).on('error', () => process.exit(1))"]
 
   seed:
-    image: node:20-alpine
-    container_name: voltnet-seed
-    working_dir: /app
     profiles: [seed]
+    build:
+      context: .
+      dockerfile: docker/seed/Dockerfile
+    image: voltnet-seed:latest
+    container_name: voltnet-seed
+    restart: "no"
     env_file:
       - path: .env
         required: false
@@ -349,12 +352,6 @@ services:
       STATIONS_DATABASE_URL: postgresql://${STATIONS_DB_USER:-stations}:${STATIONS_DB_PASS:-stations}@stations-db:5432/${STATIONS_DB_NAME:-stations_db}?schema=public
       SESSIONS_DATABASE_URL: postgresql://${SESSIONS_DB_USER:-sessions}:${SESSIONS_DB_PASS:-sessions}@sessions-db:5432/${SESSIONS_DB_NAME:-sessions_db}?schema=public
       BILLING_DATABASE_URL: postgresql://${BILLING_DB_USER:-billing}:${BILLING_DB_PASS:-billing}@billing-db:5432/${BILLING_DB_NAME:-billing_db}?schema=public
-    volumes:
-      - .:/app
-      - /app/auth-service/node_modules
-      - /app/stations-service/node_modules
-      - /app/sessions-service/node_modules
-      - /app/billing-service/node_modules
     depends_on:
       auth-db:
         condition: service_healthy
@@ -364,7 +361,6 @@ services:
         condition: service_healthy
       billing-db:
         condition: service_healthy
-    command: ["sh", "-c", "apk add --no-cache openssl && sh docker/seed/run-all-docker.sh"]
 
 volumes:
   grafana-data:

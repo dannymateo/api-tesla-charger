@@ -147,21 +147,25 @@ http://localhost:3000/docs
 
 JSON de OpenAPI: `http://localhost:3000/docs-json`
 
-## 5) Cargar datos de demo (seed)
+## 5) Datos de demo (seed)
 
-Con la infraestructura ya levantada (las bases se migran solas al arrancar cada servicio), carga datos de ejemplo:
+Al arrancar o **reconstruir** los servicios con Prisma (`auth`, `stations`, `sessions`, `billing`), cada contenedor ejecuta automáticamente `prisma db seed` después de las migraciones (datos idempotentes con `upsert`).
 
 ```bash
-docker compose --profile seed up seed
+docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
 ```
 
-En local (requiere `npm install` previo en cada servicio):
+Re-seed manual de las cuatro bases (opcional):
+
+```bash
+docker compose --profile seed up -d --build seed --force-recreate
+```
+
+En local sin Docker (requiere `npm install` en cada servicio):
 
 ```bash
 sh docker/seed/run-all.sh
 ```
-
-O por servicio: `cd auth-service && npm run db:seed` (igual para `stations-service`, `sessions-service`, `billing-service`).
 
 ### Cuentas de prueba
 
