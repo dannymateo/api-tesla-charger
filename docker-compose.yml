@@ -155,8 +155,10 @@ services:
       context: .
       dockerfile: gateway/Dockerfile
     container_name: voltnet-gateway
+    expose:
+      - "3000"
     ports:
-      - "3000:3000"
+      - "${GATEWAY_PUBLISH_PORT:-3000}:3000"
     depends_on:
       rabbitmq:
         condition: service_healthy
